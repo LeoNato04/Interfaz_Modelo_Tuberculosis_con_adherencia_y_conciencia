@@ -23,7 +23,7 @@ Incluye:
 Sigue estos pasos para ejecutar la simulación localmente en tu máquina:
 
 ### 1. Clona este repositorio
-git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/LeoNato04/Modelo_SEIR_Tuberculosis)
+git clone https://github.com/LeoNato04/Modelo_SEIR_Tuberculosis
 cd tu-repositorio
 
 ### 2. Crea un entorno virtual
