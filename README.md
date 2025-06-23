@@ -23,23 +23,31 @@ Incluye:
 Sigue estos pasos para ejecutar la simulación localmente en tu máquina:
 
 ### 1. Clona este repositorio
-git clone https://github.com/tu-usuario/tu-repositorio.git
+git clone [https://github.com/tu-usuario/tu-repositorio.git](https://github.com/LeoNato04/Modelo_SEIR_Tuberculosis)
 cd tu-repositorio
 
 ### 2. Crea un entorno virtual
+```bash
 python -m venv venv
+```
 
 ### 3. Activa el entorno virtual
 #### En Windows:
+```bash
 venv\Scripts\activate
+```
 
 #### En macOS/Linux:
 source venv/bin/activate
 ### 4. Instala las dependencias necesarias
+```bash
 pip install flask numpy scipy
+```
 
 ### 5. Ejecuta la aplicación
+```bash
 python app.py
+```
 
 ### 6. Abre tu navegador
 Ingresa a http://localhost:5000 para interactuar con la simulación.
