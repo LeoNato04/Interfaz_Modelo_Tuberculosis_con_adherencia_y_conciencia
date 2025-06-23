@@ -36,9 +36,11 @@ python -m venv venv
 ```bash
 venv\Scripts\activate
 ```
-
 #### En macOS/Linux:
+```bash
 source venv/bin/activate
+```
+
 ### 4. Instala las dependencias necesarias
 ```bash
 pip install flask numpy scipy
