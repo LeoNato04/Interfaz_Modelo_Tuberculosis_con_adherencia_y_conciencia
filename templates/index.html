@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Simulador de Tuberculosis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        #simulation { background: #f8f9fa; padding: 60px 15px; }
+        .slider-label { font-weight: 600; }
+        .slider-value { margin-left: 8px; color: #007bff; font-weight: bold; }
+        #chartTuberculosis { width: 100%; height: 400px; }
+        .rb-plot img { width: 100%; border: 1px solid #ccc; margin-bottom: 20px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-spy="scroll" data-target=".navbar" data-offset="51">
+
+<nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-dark shadow-sm py-1 px-lg-5">
+    <a class="navbar-brand d-block d-lg-none" href="#">Tuberculosis</a>
+    <button class="navbar-toggler" data-toggle="collapse" data-target="#navCollapse">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-between" id="navCollapse">
+        <div class="navbar-nav ml-auto">
+            <a class="nav-item nav-link active" href="#about">About</a>
+            <a class="nav-item nav-link" href="#simulation">Simulation</a>
+        </div>
+    </div>
+</nav>
+
+<section id="about" class="container py-5 mt-5">
+    <div class="row align-items-center">
+        <div class="col-lg-5">
+            <img src="{{ url_for('static', filename='img/Tuberculosis.png') }}" class="img-fluid" alt="Representación del modelo de tuberculosis">
+        </div>
+        <div class="col-lg-7">
+            <h6 class="text-uppercase text-primary mb-3" style="letter-spacing:3px;">Sobre el Proyecto</h6>
+            <h1 class="display-4 mb-3"><span class="text-primary">Simulador Interactivo</span> de Tuberculosis</h1>
+            <p>Este simulador implementa un modelo matemático de seis ecuaciones diferenciales ordinarias (EDOs) que describe la dinámica de propagación de la tuberculosis en una población. Las variables del modelo representan subpoblaciones: susceptibles (S), expuestos (E), infectados (I), crónicos (J), en tratamiento (T) y recuperados (R).</p>
+            <p>El usuario puede ajustar los parámetros clave del modelo (como tasas de infección, recuperación y tratamiento) para observar, en tiempo real, cómo estas decisiones afectan la evolución temporal de la enfermedad.</p>
+            <p>Los resultados se visualizan con <strong>Chart.js</strong> para el gráfico de evolución temporal y con <strong>Plotly.js</strong> para análisis 3D del número reproductivo básico \( R_b \), facilitando el análisis de sensibilidad y la evaluación de estrategias de intervención.</p>
+        </div>
+    </div>
+</section>
+
+<section id="simulation" class="container-fluid">
+    <div class="container">
+        <h2 class="text-center text-primary mb-4">Simulación del Modelo</h2>
+        <div class="row mb-4">
+            {% set params = {
+                'u': [10, 'Tasa de natalidad'],
+                'n': [0.01, 'Tasa de progreso de E a I (latente a infeccioso)'],
+                'beta': [0.5, 'Tasa de transmisión de la enfermedad'],
+                'c': [0.3, 'Fracción que pasa de infectado a tratamiento'],
+                'g': [0.05, 'Tasa de progreso de exposición a latencia'],
+                'h': [0.1, 'Tasa de progresión de latencia a infección activa'],
+                'k': [0.6, 'Proporción de pacientes que cronifican tras fallar el tratamiento'],
+                'r': [0.05, 'Tasa de detección de casos infecciosos'],
+                'γ': [0.1, 'Tasa de recuperación'],
+                'p': [0.7, 'Adherencia al tratamiento (eficacia esperada)'],
+                'd1': [0.005, 'Tasa de mortalidad en expuestos'],
+                'd2': [0.01, 'Tasa de mortalidad en infectados']
+            } %}
+            {% for key, val in params.items() %}
+            <div class="col-md-4 mb-3">
+                <label class="slider-label" for="{{ key }}" title="{{ val[1] }}">
+                    {{ key }}: <small class="text-muted">({{ val[1] }})</small>
+                </label>
+                <input type="number" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ val[0] }}" step="0.001" min="0">
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center my-4">
+            <button id="startSim" class="btn btn-primary btn-lg">Empezar simulación</button>
+        </div>
+        <canvas id="chartTuberculosis"></canvas>
+    </div>
+</section>
+
+
+<!-- Sección para ingresar el tiempo y calcular los resultados de las EDOs -->
+<section class="mt-5 container">
+    <h2 class="text-center text-info mb-4">Resultados de las EDOs para un Tiempo Específico</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="timeInput" class="form-label">Ingresa el tiempo en días</label>
+            <input type="number" class="form-control" id="timeInput" placeholder="Ejemplo: 100" min="0" step="1">
+        </div>
+        <div class="col-md-6 mb-3 d-flex align-items-end">
+            <button id="calculateResults" class="btn btn-success btn-lg">Calcular</button>
+        </div>
+    </div>
+
+    <div id="edoResults" class="text-center mt-4" style="display: none;">
+        <h4>Resultados de las 6 EDOs en el día seleccionado:</h4>
+        <div id="resultsTable"></div>
+    </div>
+</section>
+
+<!-- Lógica del cálculo de los resultados -->
+<script>
+    document.getElementById('calculateResults').addEventListener('click', async () => {
+        const time = document.getElementById('timeInput').value;
+        if (!time || time < 0) {
+            alert('Por favor, ingresa un tiempo válido en días.');
+            return;
+        }
+
+        // Realizar la solicitud para obtener los resultados de las 6 EDOs para el tiempo ingresado
+        const response = await fetch('/get_edo_results', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ time: parseInt(time) })
+        });
+
+        if (!response.ok) {
+            alert('Error al obtener los resultados');
+            return;
+        }
+
+        const data = await response.json();
+
+        // Mostrar los resultados
+        const resultsTable = `
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Clase</th>
+                        <th>Número de Individuos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Susceptibles (S)</td><td>${data.S}</td></tr>
+                    <tr><td>Latentes (E)</td><td>${data.E}</td></tr>
+                    <tr><td>Infectados con conciencia (J)</td><td>${data.J}</td></tr>
+                    <tr><td>Infectados sin conciencia (L)</td><td>${data.L}</td></tr>
+                    <tr><td>Infectados no detectados (I)</td><td>${data.I}</td></tr>
+                    <tr><td>Recuperados (R)</td><td>${data.R}</td></tr>
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById('resultsTable').innerHTML = resultsTable;
+        document.getElementById('edoResults').style.display = 'block';
+    });
+</script>
+
+
+
+<!-- Sección de gráficos 3D -->
+<section class="mt-5 container">
+    <h2 class="text-center text-success mb-4">Gráficos 3D de R<sub>b</sub></h2>
+    
+<!-- Eliminado: los gráficos 3D ahora se generan automáticamente al hacer clic en "Empezar simulación" -->
+
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div id="plot-rb-a1-a2" class="plot-container"></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div id="plot-rb-gamma-b" class="plot-container"></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div id="plot-rb-p-k" class="plot-container"></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div id="plot-rb-g-k" class="plot-container"></div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h4>Interpretación:</h4>
+        <p><strong>Rb vs (a1, a2):</strong> Explora cómo la tasa de progresión aguda y la conversión a crónicos afectan el umbral epidémico.</p>
+        <p><strong>Rb vs (γ, β):</strong> Muestra la sensibilidad del modelo ante cambios en la recuperación y transmisión.</p>
+        <p><strong>Rb vs (p, k):</strong> Evalúa el impacto de la eficacia del tratamiento y la fracción que se convierte en crónicos.</p>
+        <p><strong>Rb vs (g, k):</strong> Relaciona la tasa de latencia con la proporción de pacientes que cronifican.</p>
+    </div>
+</section>
+
+<footer class="bg-dark text-white py-4">
+    <div class="container text-center">
+        &copy; 2025 Simulador TB. Todos los derechos reservados.
+    </div>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+<script src="/static/main.js"></script>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const params = ['u', 'n', 'beta', 'c', 'g', 'h', 'k', 'r', 'gamma', 'p', 'd1', 'd2'];
+    const chart = new Chart(document.getElementById('chartTuberculosis').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {label: 'S', data: [], borderColor: 'blue', fill: false},
+                {label: 'E', data: [], borderColor: 'orange', fill: false},
+                {label: 'I', data: [], borderColor: 'red', fill: false},
+                {label: 'J', data: [], borderColor: 'purple', fill: false},
+                {label: 'L', data: [], borderColor: 'green', fill: false},
+                {label: 'R', data: [], borderColor: 'brown', fill: false}
+            ]
+        },
+        options: {
+            responsive: true,
+            animation: false,
+            scales: {
+                x: {title: {display: true, text: 'Tiempo'}},
+                y: {title: {display: true, text: 'Población'}, beginAtZero: true}
+            }
+        }
+    });
+
+    document.getElementById('startSim').addEventListener('click', async () => {
+        const paramValues = {};
+        params.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) paramValues[id] = parseFloat(input.value);
+        });
+
+        const response = await fetch('/run_simulation', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(paramValues)
+        });
+
+        if (!response.ok) {
+            alert('Error en la simulación');
+            return;
+        }
+
+        const data = await response.json();
+
+        // Actualiza gráfico 2D
+        chart.data.labels = data.time;
+        chart.data.datasets[0].data = data.S;
+        chart.data.datasets[1].data = data.E;
+        chart.data.datasets[2].data = data.I;
+        chart.data.datasets[3].data = data.J;
+        chart.data.datasets[4].data = data.L;
+        chart.data.datasets[5].data = data.R;
+        chart.update();
+
+        // Renderiza gráficos 3D
+        const surfaces = data.rb_surfaces;
+
+        Plotly.newPlot('plot-rb-a1-a2', [{
+            z: surfaces.rb_a1_a2,
+            x: surfaces.a1,
+            y: surfaces.a2,
+            type: 'surface'
+        }], {
+            title: 'Rb vs a1 y a2',
+            scene: {
+                xaxis: {title: 'a1'},
+                yaxis: {title: 'a2'},
+                zaxis: {title: 'Rb'}
+            }
+        });
+
+        Plotly.newPlot('plot-rb-gamma-b', [{
+            z: surfaces.rb_gamma_b,
+            x: surfaces.gamma,
+            y: surfaces.b,
+            type: 'surface'
+        }], {
+            title: 'Rb vs γ y β',
+            scene: {
+                xaxis: {title: 'γ'},
+                yaxis: {title: 'β'},
+                zaxis: {title: 'Rb'}
+            }
+        });
+
+        Plotly.newPlot('plot-rb-p-k', [{
+            z: surfaces.rb_p_k,
+            x: surfaces.p,
+            y: surfaces.k,
+            type: 'surface'
+        }], {
+            title: 'Rb vs p y k',
+            scene: {
+                xaxis: {title: 'p'},
+                yaxis: {title: 'k'},
+                zaxis: {title: 'Rb'}
+            }
+        });
+
+        Plotly.newPlot('plot-rb-g-k', [{
+            z: surfaces.rb_g_k,
+            x: surfaces.g,
+            y: surfaces.k,
+            type: 'surface'
+        }], {
+            title: 'Rb vs g y k',
+            scene: {
+                xaxis: {title: 'g'},
+                yaxis: {title: 'k'},
+                zaxis: {title: 'Rb'}
+            }
+        });
+    });
+});
+</script>
+<script src="/static/main.js"></script>
+</body>
+</html>
