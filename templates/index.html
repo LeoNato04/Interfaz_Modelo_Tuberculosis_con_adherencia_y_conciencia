@@ -5,7 +5,7 @@
     <title>Simulador de Tuberculosis</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         #simulation { background: #f8f9fa; padding: 60px 15px; }
         .slider-label { font-weight: 600; }
@@ -45,20 +45,82 @@
     </div>
 </section>
 
+<!-- Sección de ilustración matemática del sistema de EDOs -->
+<section class="mt-5 container">
+    <h2 class="text-center text-primary mb-4">Sistema de Ecuaciones Diferenciales</h2>
+    <p class="lead text-justify">
+        El modelo compartimental considera seis estados de la población, cuyas transiciones están regidas por el siguiente sistema de ecuaciones diferenciales:
+    </p>
+
+<!-- Contenedor centrado -->
+<div class="d-flex justify-content-center">
+    <!-- Contenido alineado a la izquierda dentro del contenedor -->
+    <div class="bg-light p-4 rounded shadow-sm" style="max-width: 700px; text-align: left;">
+        <p>
+            \[
+            \frac{dS}{dt} = u - (\beta + n)S
+            \]
+            \[
+            \frac{dE}{dt} = c\beta S - (n + g)E + (1 - p)rT
+            \]
+            \[
+            \frac{dI}{dt} = (1 - c)\beta S + gE - (n + d_1 + h)I
+            \]
+            \[
+            \frac{dJ}{dt} = khI - (n + \gamma)J
+            \]
+            \[
+            \frac{dT}{dt} = (1 - k)hI - (n + d_2 + r)T
+            \]
+            \[
+            \frac{dR}{dt} = \gamma J + prT - nR
+            \]
+            <br>
+            <strong>Definición de \( \beta \):</strong>
+            \[
+            \beta = b(1 - a_1)\frac{(1 - a_2)I + m_1(1 - a_2)J + m_2T}{S + E + I + J + T + R}
+            \]
+            <br>
+            <strong>Definición de \( R_b \):</strong>
+            \[
+            R_b = \frac{(1 - a_1)b\left[ c g + (1 - c)z_1 \right] \left[ (1 - a_2)z_4(z_3 + m_1 k h) + (1 - k) h m_2 z_3 \right]}{z_3 z_1 z_2 z_4 - (1 - p) r g (1 - k) h}
+            \]
+
+            <p><strong>Donde:</strong></p>
+            <ul>
+            <li>\( z_1 = n + g \): tasa de salida del compartimiento latente (E).</li>
+            <li>\( z_2 = n + d_1 + h \): tasa de salida de los infectados no detectados (I).</li>
+            <li>\( z_3 = n + \gamma \): tasa de salida de los infectados conscientes (J).</li>
+            <li>\( z_4 = n + d_2 + r \): tasa de salida de los infectados sin conciencia (T).</li>
+            </ul>
+        </p>
+    </div>
+</div>
+
+
+    <p class="text-muted mt-3">
+        Estas ecuaciones representan la dinámica de la tuberculosis en una población que considera tanto el diagnóstico como la adherencia al tratamiento.
+    </p>
+</section>
+
+
 <section id="simulation" class="container-fluid">
-    <div class="container">
-        <h2 class="text-center text-primary mb-4">Simulación del Modelo</h2>
-        <div class="row mb-4">
+  <div class="container">
+    <h2 class="text-center text-primary mb-4">Simulación del Modelo</h2>
+    <div class="row mb-4">
+      <!-- Columna grande para parámetros -->
+        <div class="col-md-9">
+            <div class="row">
             {% set params = {
-                'u': [10, 'Tasa de natalidad'],
+                'u': [10300, 'Tasa de natalidad'],
                 'n': [0.01, 'Tasa de progreso de E a I (latente a infeccioso)'],
-                'beta': [0.5, 'Tasa de transmisión de la enfermedad'],
+                'b': [0.5, 'Probabilidad de contagio por contacto directo'],
                 'c': [0.3, 'Fracción que pasa de infectado a tratamiento'],
                 'g': [0.05, 'Tasa de progreso de exposición a latencia'],
                 'h': [0.1, 'Tasa de progresión de latencia a infección activa'],
                 'k': [0.6, 'Proporción de pacientes que cronifican tras fallar el tratamiento'],
                 'r': [0.05, 'Tasa de detección de casos infecciosos'],
-                'γ': [0.1, 'Tasa de recuperación'],
+                'gamma': [0.1, 'Tasa de recuperación'],
                 'p': [0.7, 'Adherencia al tratamiento (eficacia esperada)'],
                 'd1': [0.005, 'Tasa de mortalidad en expuestos'],
                 'd2': [0.01, 'Tasa de mortalidad en infectados']
@@ -66,16 +128,48 @@
             {% for key, val in params.items() %}
             <div class="col-md-4 mb-3">
                 <label class="slider-label" for="{{ key }}" title="{{ val[1] }}">
-                    {{ key }}: <small class="text-muted">({{ val[1] }})</small>
+                {{ key }}: <small class="text-muted">({{ val[1] }})</small>
                 </label>
-                <input type="number" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ val[0] }}" step="0.001" min="0">
+                <input type="number" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ val[0] }}" step="0.002" min="0">
             </div>
             {% endfor %}
+            </div>
         </div>
+
+        <!-- Columna pequeña para valores calculados -->
+        <div class="col-md-3">
+            <h5 class="text-primary">Valores calculados</h5>
+            <div class="bg-light p-3 rounded shadow-sm">
+            <p><strong>β:</strong> <span id="betaDisplay">-</span></p>
+            <p><strong>R<sub>b</sub>:</strong> <span id="rbDisplay">-</span></p>
+            <p><strong>a<sub>1</sub>:</strong> <span id="a1Display">-</span></p>
+            <p><strong>a<sub>2</sub>:</strong> <span id="a2Display">-</span></p>
+            <p><strong>m<sub>1</sub>:</strong> <span id="m1Display">-</span></p>
+            <p><strong>m<sub>2</sub>:</strong> <span id="m2Display">-</span></p>
+            <p><strong>z<sub>1</sub>:</strong> <span id="z1Display">-</span></p>
+            <p><strong>z<sub>2</sub>:</strong> <span id="z2Display">-</span></p>
+            <p><strong>z<sub>3</sub>:</strong> <span id="z3Display">-</span></p>
+            <p><strong>z<sub>4</sub>:</strong> <span id="z4Display">-</span></p>
+            </div>
+        </div>
+
         <div class="text-center my-4">
-            <button id="startSim" class="btn btn-primary btn-lg">Empezar simulación</button>
+            <button id="sim1Btn" class="btn btn-outline-primary btn-lg">Simulación 1</button>
+            <button id="sim2Btn" class="btn btn-outline-primary btn-lg">Simulación 2</button>
         </div>
+        
         <canvas id="chartTuberculosis"></canvas>
+
+        <!-- Control de días (campo numérico en lugar de slider) -->
+        <div class="mb-4 row">
+            <div class="col-md-6">
+                <label for="dayRange" class="form-label">Duración de la simulación (en días)</label>
+                <input type="number" class="form-control" id="dayRange" value="200" min="1" max="1500" step="1">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <strong>Ejemplo: 1000 días para observar comportamiento largo plazo</strong>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -84,7 +178,7 @@
 <section class="mt-5 container">
     <h2 class="text-center text-info mb-4">Resultados de las EDOs para un Tiempo Específico</h2>
     <div class="row">
-        <div class="col-md-6 mb-3">
+        <div class="col-md-6 mb-3">w
             <label for="timeInput" class="form-label">Ingresa el tiempo en días</label>
             <input type="number" class="form-control" id="timeInput" placeholder="Ejemplo: 100" min="0" step="1">
         </div>
@@ -108,7 +202,7 @@
             return;
         }
 
-        // Realizar la solicitud para obtener los resultados de las 6 EDOs para el tiempo ingresado
+        // Realizar la solicitud para obtener los resultados
         const response = await fetch('/get_edo_results', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -122,22 +216,23 @@
 
         const data = await response.json();
 
-        // Mostrar los resultados
+        // Construir tabla de resultados con redondeo
         const resultsTable = `
             <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>Clase</th>
-                        <th>Número de Individuos</th>
+                        <th>Valor Exacto</th>
+                        <th>Valor Entero</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>Susceptibles (S)</td><td>${data.S}</td></tr>
-                    <tr><td>Latentes (E)</td><td>${data.E}</td></tr>
-                    <tr><td>Infectados con conciencia (J)</td><td>${data.J}</td></tr>
-                    <tr><td>Infectados sin conciencia (L)</td><td>${data.L}</td></tr>
-                    <tr><td>Infectados no detectados (I)</td><td>${data.I}</td></tr>
-                    <tr><td>Recuperados (R)</td><td>${data.R}</td></tr>
+                    <tr><td>Susceptibles (S)</td><td>${data.S.toFixed(6)}</td><td>${Math.ceil(data.S)}</td></tr>
+                    <tr><td>Latentes (E)</td><td>${data.E.toFixed(6)}</td><td>${Math.ceil(data.E)}</td></tr>
+                    <tr><td>Infectados con conciencia (J)</td><td>${data.J.toFixed(6)}</td><td>${Math.ceil(data.J)}</td></tr>
+                    <tr><td>Infectados sin conciencia (T)</td><td>${data.T.toFixed(6)}</td><td>${Math.ceil(data.T)}</td></tr>
+                    <tr><td>Infectados no detectados (I)</td><td>${data.I.toFixed(6)}</td><td>${Math.ceil(data.I)}</td></tr>
+                    <tr><td>Recuperados (R)</td><td>${data.R.toFixed(6)}</td><td>${Math.ceil(data.R)}</td></tr>
                 </tbody>
             </table>
         `;
@@ -153,9 +248,16 @@
 <section class="mt-5 container">
     <h2 class="text-center text-success mb-4">Gráficos 3D de R<sub>b</sub></h2>
     
+    <div class="mt-4">
+        <h4>Interpretación:</h4>
+        <p><strong>Rb vs (a1, a2):</strong> Explora cómo la tasa de progresión aguda y la conversión a crónicos afectan el umbral epidémico.</p>
+        <p><strong>Rb vs (gamma, b):</strong> Muestra la sensibilidad del modelo ante cambios en la recuperación y transmisión.</p>
+        <p><strong>Rb vs (p, k):</strong> Evalúa el impacto de la eficacia del tratamiento y la fracción que se convierte en crónicos.</p>
+        <p><strong>Rb vs (g, k):</strong> Relaciona la tasa de latencia con la proporción de pacientes que cronifican.</p>
+    </div>
+
 <!-- Eliminado: los gráficos 3D ahora se generan automáticamente al hacer clic en "Empezar simulación" -->
 
-    
     <div class="row">
         <div class="col-md-6 mb-4">
             <div id="plot-rb-a1-a2" class="plot-container"></div>
@@ -171,143 +273,74 @@
         </div>
     </div>
 
-    <div class="mt-4">
-        <h4>Interpretación:</h4>
-        <p><strong>Rb vs (a1, a2):</strong> Explora cómo la tasa de progresión aguda y la conversión a crónicos afectan el umbral epidémico.</p>
-        <p><strong>Rb vs (γ, β):</strong> Muestra la sensibilidad del modelo ante cambios en la recuperación y transmisión.</p>
-        <p><strong>Rb vs (p, k):</strong> Evalúa el impacto de la eficacia del tratamiento y la fracción que se convierte en crónicos.</p>
-        <p><strong>Rb vs (g, k):</strong> Relaciona la tasa de latencia con la proporción de pacientes que cronifican.</p>
-    </div>
+
+
 </section>
 
+
 <footer class="bg-dark text-white py-4">
-    <div class="container text-center">
-        &copy; 2025 Simulador TB. Todos los derechos reservados.
-    </div>
+  <div class="container text-center">
+    &copy; 2025 Simulador TB. Todos los derechos reservados.
+  </div>
 </footer>
 
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
-<script src="/static/main.js"></script>
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+<!-- Tu main.js que contiene runSimulation y los listeners -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const params = ['u', 'n', 'beta', 'c', 'g', 'h', 'k', 'r', 'gamma', 'p', 'd1', 'd2'];
-    const chart = new Chart(document.getElementById('chartTuberculosis').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {label: 'S', data: [], borderColor: 'blue', fill: false},
-                {label: 'E', data: [], borderColor: 'orange', fill: false},
-                {label: 'I', data: [], borderColor: 'red', fill: false},
-                {label: 'J', data: [], borderColor: 'purple', fill: false},
-                {label: 'L', data: [], borderColor: 'green', fill: false},
-                {label: 'R', data: [], borderColor: 'brown', fill: false}
-            ]
-        },
-        options: {
-            responsive: true,
-            animation: false,
-            scales: {
-                x: {title: {display: true, text: 'Tiempo'}},
-                y: {title: {display: true, text: 'Población'}, beginAtZero: true}
-            }
-        }
+document.getElementById('calculateResults').addEventListener('click', async () => {
+    const time = parseInt(document.getElementById('timeInput').value);
+    if (!time || time < 0) {
+        alert('Por favor, ingresa un tiempo válido en días.');
+        return;
+    }
+
+    const response = await fetch('/get_edo_results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ time })
     });
 
-    document.getElementById('startSim').addEventListener('click', async () => {
-        const paramValues = {};
-        params.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) paramValues[id] = parseFloat(input.value);
-        });
+    if (!response.ok) {
+        alert('Error al obtener los resultados');
+        return;
+    }
 
-        const response = await fetch('/run_simulation', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(paramValues)
-        });
+    const data = await response.json();
+    if (data.error) {
+        alert("Error: " + data.error);
+        return;
+    }
 
-        if (!response.ok) {
-            alert('Error en la simulación');
-            return;
-        }
+    // Construye la tabla con Sim 1 y Sim 2
+    const variables = ['S', 'E', 'I', 'J', 'T', 'R'];
+    const headers = variables.map(v => `<th>${v}</th>`).join('');
+    const sim1 = variables.map(v => `<td>${Math.ceil(data.sim1[v])}</td>`).join('');
+    const sim2 = variables.map(v => `<td>${Math.ceil(data.sim2[v])}</td>`).join('');
 
-        const data = await response.json();
+    const resultsTable = `
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr><th>Simulación</th>${headers}</tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Sim 1</strong></td>${sim1}</tr>
+                <tr><td><strong>Sim 2</strong></td>${sim2}</tr>
+            </tbody>
+        </table>
+    `;
 
-        // Actualiza gráfico 2D
-        chart.data.labels = data.time;
-        chart.data.datasets[0].data = data.S;
-        chart.data.datasets[1].data = data.E;
-        chart.data.datasets[2].data = data.I;
-        chart.data.datasets[3].data = data.J;
-        chart.data.datasets[4].data = data.L;
-        chart.data.datasets[5].data = data.R;
-        chart.update();
-
-        // Renderiza gráficos 3D
-        const surfaces = data.rb_surfaces;
-
-        Plotly.newPlot('plot-rb-a1-a2', [{
-            z: surfaces.rb_a1_a2,
-            x: surfaces.a1,
-            y: surfaces.a2,
-            type: 'surface'
-        }], {
-            title: 'Rb vs a1 y a2',
-            scene: {
-                xaxis: {title: 'a1'},
-                yaxis: {title: 'a2'},
-                zaxis: {title: 'Rb'}
-            }
-        });
-
-        Plotly.newPlot('plot-rb-gamma-b', [{
-            z: surfaces.rb_gamma_b,
-            x: surfaces.gamma,
-            y: surfaces.b,
-            type: 'surface'
-        }], {
-            title: 'Rb vs γ y β',
-            scene: {
-                xaxis: {title: 'γ'},
-                yaxis: {title: 'β'},
-                zaxis: {title: 'Rb'}
-            }
-        });
-
-        Plotly.newPlot('plot-rb-p-k', [{
-            z: surfaces.rb_p_k,
-            x: surfaces.p,
-            y: surfaces.k,
-            type: 'surface'
-        }], {
-            title: 'Rb vs p y k',
-            scene: {
-                xaxis: {title: 'p'},
-                yaxis: {title: 'k'},
-                zaxis: {title: 'Rb'}
-            }
-        });
-
-        Plotly.newPlot('plot-rb-g-k', [{
-            z: surfaces.rb_g_k,
-            x: surfaces.g,
-            y: surfaces.k,
-            type: 'surface'
-        }], {
-            title: 'Rb vs g y k',
-            scene: {
-                xaxis: {title: 'g'},
-                yaxis: {title: 'k'},
-                zaxis: {title: 'Rb'}
-            }
-        });
-    });
+    document.getElementById('resultsTable').innerHTML = resultsTable;
+    document.getElementById('edoResults').style.display = 'block';
 });
 </script>
-<script src="/static/main.js"></script>
+
 </body>
 </html>
