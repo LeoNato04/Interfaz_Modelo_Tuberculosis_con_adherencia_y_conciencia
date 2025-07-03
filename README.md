@@ -11,8 +11,8 @@ Incluye:
 - Formulación matemática detallada del sistema de EDOs  
 - Análisis cualitativo (no negatividad, región invariante)  
 - Cálculo del número reproductivo básico \( R_b \)  
-- 🖥Simulación interactiva vía interfaz web (HTML + JS)  
-- 🎛Análisis de sensibilidad con visualizaciones 3D  
+- Simulación interactiva vía interfaz web (HTML + JS)  
+- Análisis de sensibilidad con visualizaciones 3D
 - Documento explicativo en formato LaTeX  
 
 Aplicación contextual: Región de Malakand, Pakistán  
