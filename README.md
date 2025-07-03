@@ -8,18 +8,18 @@ Este repositorio contiene la implementación de un modelo compartimental para si
 
 Incluye:
 
-- 📐 Formulación matemática detallada del sistema de EDOs  
-- ✅ Análisis cualitativo (no negatividad, región invariante)  
-- 📈 Cálculo del número reproductivo básico \( R_b \)  
-- 🖥️ Simulación interactiva vía interfaz web (HTML + JS)  
-- 🎛️ Análisis de sensibilidad con visualizaciones 3D  
-- 📄 Documento explicativo en formato LaTeX  
+- Formulación matemática detallada del sistema de EDOs  
+- Análisis cualitativo (no negatividad, región invariante)  
+- Cálculo del número reproductivo básico \( R_b \)  
+- 🖥Simulación interactiva vía interfaz web (HTML + JS)  
+- 🎛Análisis de sensibilidad con visualizaciones 3D  
+- Documento explicativo en formato LaTeX  
 
-📍 Aplicación contextual: Región de Malakand, Pakistán  
+Aplicación contextual: Región de Malakand, Pakistán  
 📊 Herramientas usadas: Python (simulación), Chart.js (gráficos), HTML/CSS/JS (interfaz), LaTeX (documentación)
 
 
-## 🛠️ Instrucciones de Uso
+## Instrucciones de Uso
 Sigue estos pasos para ejecutar la simulación localmente en tu máquina:
 
 ### 1. Clona este repositorio
